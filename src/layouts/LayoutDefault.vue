@@ -13,7 +13,6 @@
     <div class="banner-footer container" v-if="showBannerBottom">
         <img src="https://www.shutterstock.com/image-illustration/digital-cryptocurrency-block-chain-market-600nw-1939827760.jpg"
             alt="" class="banner-advertising" />
-
         <button class="btn-close" @click="showBannerBottom = false">
             <CloseOutlined />
         </button>

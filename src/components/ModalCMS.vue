@@ -1,5 +1,5 @@
 <template>
-    <a-modal :open="showModal" :title="titleModal" :footer="null" @cancel="emit('close-modal');">
+    <a-modal :open="showModal" :title="titleModal" :footer="null" @cancel="emit('close-modal')" :maskClosable="false">
         <slot />
         <div class="modal-footer">
             <slot name="footer"></slot>

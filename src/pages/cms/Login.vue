@@ -1,57 +1,57 @@
 <template>
-    <div class="page-login">
-        <div class="wrap-content">
-            <h1>Login</h1>
-            <a-form :model="formState" :label-col="{ span: 4 }" name="basic" autocomplete="off" @finish="onFinish"
-                @finishFailed="onFinishFailed" class="form-login">
-                <a-form-item label="Username" name="username"
-                    :rules="[{ required: true, message: 'Please input your username!' }]">
-                    <a-input v-model:value="formState.username" />
-                </a-form-item>
+    <a-spin :spinning="loading">
+        <div class="page-login">
 
-                <a-form-item label="Password" name="password"
-                    :rules="[{ required: true, message: 'Please input your password!' }]">
-                    <a-input-password v-model:value="formState.password" />
-                </a-form-item>
+            <div class="wrap-content">
+                <h1>Login</h1>
+                <a-form :model="formState" :label-col="{ span: 4 }" name="basic" autocomplete="off" @finish="onFinish"
+                    class="form-login">
+                    <a-form-item label="Email" name="email"
+                        :rules="[{ required: true, message: 'Please input your email!' }]">
+                        <a-input v-model:value="formState.email" />
+                    </a-form-item>
 
-                <a-button type="primary" html-type="submit" style="display: table; margin: auto;">Login</a-button>
-            </a-form>
+                    <a-form-item label="Password" name="password"
+                        :rules="[{ required: true, message: 'Please input your password!' }]">
+                        <a-input-password v-model:value="formState.password" />
+                    </a-form-item>
+
+                    <a-button type="primary" html-type="submit" style="display: table; margin: auto;">Login</a-button>
+                </a-form>
+            </div>
         </div>
-
-    </div>
+    </a-spin>
 </template>
 <script setup>
-import { reactive } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import Cookie from 'js-cookie';
 import { message } from 'ant-design-vue';
+import LoginSrv from '../../services/CMS/auth.service';
 
 
-const HARD_CODE_DATA = [
-    {
-        username: 'admin',
-        password: 'Password1!',
-        role: 'admin'
-    },
-    {
-        username: 'admin2',
-        password: 'Password2!',
-        role: 'user'
-    }
-]
+const loading = ref(false);
 const router = useRouter();
 const formState = reactive({
-    username: '',
-    password: ''
+    email: 'admin@gmail.com',
+    password: 'admin!@#456'
 });
-const onFinish = values => {
-    if ((values.username == HARD_CODE_DATA[0].username && values.password == HARD_CODE_DATA[0].password) ||
-        (values.username == HARD_CODE_DATA[1].username && values.password == HARD_CODE_DATA[1].password)) {
-        values = values.username == HARD_CODE_DATA[0].username ? HARD_CODE_DATA[0] : HARD_CODE_DATA[1];
-        message.success('Login success!');
-        Cookie.set("access_token", JSON.stringify(values));
-        router.push({ name: 'admin' })
-    } else message.error('Username or password incorrect!');
+const onFinish = async (values) => {
+    loading.value = true;
+    try {
+        const res = await LoginSrv.login(values);
+        if (res.data.success) {
+            console.log(res.data.data.access_token);
+            message.success('Login success!');
+            Cookie.set("access_token", `Bearer ${res.data.data.access_token}`);
+            router.push({ name: 'admin' });
+        }
+    } catch (error) {
+        message.error('Sai thông tin đăng nhập');
+        console.error('Error fetching tag:', error);
+    } finally {
+        loading.value = false;
+    }
 };
 </script>
 

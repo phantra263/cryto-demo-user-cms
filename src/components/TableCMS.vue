@@ -1,7 +1,7 @@
 <template>
-    <a-table :columns="props.columns" v-if="props.data.length > 0"
-        :data-source="props.data?.length > 0 ? props.data : [{}]" bordered
-        :scroll="{ x: widthScroll ? widthScroll : 1200 }" :pagination="false">
+    <a-table :columns="props.columns" v-if="props.data.length > 0" :scroll="{ x: props.scroll ? props.scroll : 1200 }"
+        rowClassName="custom-table" :data-source="props.data?.length > 0 ? props.data : [{}]" bordered
+        :pagination="false">
         <template #bodyCell="{ column, record }">
             <!-- description -->
             <template v-if="column.key === 'description'">
@@ -37,10 +37,9 @@
     <a-empty v-else />
 </template>
 <script setup>
-import moment from 'moment';
-import { CheckOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
-const props = defineProps(['columns', 'data', 'widthScroll', 'listGroup']);
+const props = defineProps(['columns', 'data', 'widthScroll', 'listGroup', 'scroll']);
 const emit = defineEmits(['update', 'delete']);
 const edit = (record) => {
     emit('update', record);
@@ -49,7 +48,7 @@ const deleteRecord = (id) => {
     emit('delete', id);
 }
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

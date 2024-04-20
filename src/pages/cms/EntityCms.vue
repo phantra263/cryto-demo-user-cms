@@ -6,8 +6,10 @@
         <a-button type="primary" @click="openModal">Add</a-button>
     </div>
     <a-spin :spinning="loading">
-        <TableCMS :columns="columnsEntities" :data="listEntities" :width-scroll="2000" @update="handleUpdate"
-            @delete="handleDelete" />
+        <TableCMS :columns="columnsEntities" :data="listEntities" @update="handleUpdate" @delete="handleDelete"
+            :scroll="2000" />
+        <PaginationCMS v-if="listEntities.length" :current-page="fetchParams.page" :total="total"
+            :page-size="fetchParams.per_page" @change-page="handleChangePage" />
     </a-spin>
 
     <!-- Modal -->
@@ -27,7 +29,7 @@
                         v-model:content="formState.description" />
                 </a-form-item>
                 <a-row :gutter="24">
-                    <a-form-item name="thumbnail" label="Thumbnail" :rules="thumbnailRules">
+                    <a-form-item name="thumbnail" label="Thumbnail" :rules="thumbnailRules" class="custom-upload">
                         <a-upload v-model:fileList="formState.thumbnail" :before-upload="handleBeforeUpload"
                             :maxCount="1" accept=".jpg,.png,.gif" name="logo" list-type="picture">
                             <a-button>
@@ -53,14 +55,16 @@
                     </a-form-item>
                 </a-row>
                 <a-row class="custom-select">
-                    <a-form-item label="Tag" name="tag_id">
+                    <a-form-item label="Tag" name="tag_id"
+                        :rules="[{ required: true, message: 'Please choose tag name!' }]">
                         <a-select v-model:value="formState.tag_id" placeholder="Please select a tag">
                             <a-select-option :value="tag.id" v-for="tag in listTags" :key="tag.id">
                                 {{ tag.name }}
                             </a-select-option>
                         </a-select>
                     </a-form-item>
-                    <a-form-item label="Type" name="type">
+                    <a-form-item label="Type" name="type"
+                        :rules="[{ required: true, message: 'Please choose type post!' }]">
                         <a-select v-model:value="formState.type" mode="multiple" placeholder="Please select post type">
                             <a-select-option v-for="(type, index) in listPostType" :value="type.id" :key="type.id">
                                 {{ type.name }}
@@ -87,6 +91,7 @@ import EntitySrv from '../../services/CMS/entity.service';
 import PostTypeSrv from '../../services/CMS/postType.service';
 import TagsSrv from '../../services/CMS/tag.service';
 import { message } from 'ant-design-vue';
+import PaginationCMS from '../../components/PaginationCMS.vue';
 
 // Define default form values
 const defaultFormState = {
@@ -101,7 +106,12 @@ const defaultFormState = {
     type: [],
     imgServer: ''
 }
-let formState = ref(defaultFormState);
+
+let fetchParams = {
+    page: 1,
+    per_page: 5
+}
+let formState = ref({ ...defaultFormState });
 const formRef = ref(null);
 let listTags = ref([]);
 let listPostType = ref([]);
@@ -109,32 +119,61 @@ const loading = ref(false);
 const flagUpdate = ref(false);
 let listEntities = ref([]);
 const total = ref(0);
-const columnsEntities = [{
-    title: 'Id', dataIndex: 'id', key: 'id', width: 60
-}, {
-    title: 'Title', dataIndex: 'title',
-    key: 'title'
-}, { title: 'Slug', dataIndex: 'slug', key: 'slug', }, {
-    title: 'Description',
-    dataIndex: 'description', key: 'description',
-}, {
-    title: 'Thumbnail', dataIndex: 'thumbnail',
-    key: 'thumbnail', width: 300
-}, { title: 'Url', dataIndex: 'url', key: 'url', }, {
-    title: 'Is show', width: 100, align: 'center',
-    dataIndex: 'is_show', key: 'switch',
-}, {
-    title: 'Is favorite', dataIndex: 'is_favorite',
-    key: 'switch', width: 100, align: 'center'
-}, { title: 'Tag name', dataIndex: 'tag_name', key: 'tag_name', }, {
-    title: 'Created at', dataIndex: 'created_at', key: 'time',
-}, {
-    title: 'Updated at',
-    dataIndex: 'updated_at', key: 'time',
-}, {
-    dataIndex: 'action', key: 'action', fixed: 'right',
-    width: 80
-}];
+const columnsEntities = [
+    {
+        title: 'Id', dataIndex: 'id', key: 'id', width: 60
+    },
+    {
+        title: 'Title', dataIndex: 'title',
+        key: 'title'
+    },
+    { title: 'Slug', dataIndex: 'slug', key: 'slug', }, {
+        title: 'Description',
+        dataIndex: 'description', key: 'description',
+    },
+    {
+        title: 'Thumbnail', dataIndex: 'thumbnail',
+        key: 'thumbnail', width: 300
+    },
+    {
+        title: 'Url',
+        dataIndex: 'url',
+        key: 'url'
+    },
+    {
+        title: 'Is show',
+        width: 100,
+        align: 'center',
+        dataIndex: 'is_show',
+        key: 'switch',
+    },
+    {
+        title: 'Is favorite',
+        dataIndex: 'is_favorite',
+        key: 'switch',
+        width: 100,
+        align: 'center'
+    },
+    {
+        title: 'Tag name',
+        dataIndex: 'tag_name',
+        key: 'tag_name',
+    },
+    {
+        title: 'Created at',
+        dataIndex: 'created_at',
+        key: 'time', width: 200,
+    },
+    {
+        title: 'Updated at',
+        dataIndex: 'updated_at',
+        key: 'time', width: 200,
+    },
+    {
+        dataIndex: 'action',
+        key: 'action', fixed: 'right',
+        width: 80
+    }];
 const showModal = ref(false);
 
 const thumbnailRules = computed(() => {
@@ -154,10 +193,18 @@ const handleCloseModal = () => {
     showModal.value = false; // Cập nhật showModal khi đóng modal
 };
 
+const handleChangePage = (page) => {
+    fetchParams = {
+        ...fetchParams,
+        page: page
+    }
+    getAllPost();
+}
+
 const getTags = async () => {
     try {
         const res = await TagsSrv.getAll();
-        if (res.data?.data.length > 0) {
+        if (res.data.success) {
             listTags.value = res.data.data;
         }
     } catch (error) {
@@ -168,10 +215,10 @@ const getTags = async () => {
 const getAllPost = async () => {
     loading.value = true;
     try {
-        const res = await EntitySrv.getAll();
+        const res = await EntitySrv.getAll(fetchParams);
         if (res.data.success) {
-            listEntities.value = res.data.data.data;
-            total.value = res.data.data.total;
+            listEntities.value = res.data.data;
+            total.value = res.data.pagination.total;
         }
     } catch (error) {
         console.error('Error fetching all post:', error);
@@ -183,7 +230,7 @@ const getAllPost = async () => {
 const getPostType = async () => {
     try {
         const res = await PostTypeSrv.getAll();
-        if (res.data?.data.length > 0) {
+        if (res.data.success) {
             listPostType.value = res.data.data;
         }
     } catch (error) {
@@ -193,9 +240,14 @@ const getPostType = async () => {
 
 const handleUpdate = async (data) => {
     flagUpdate.value = true;
+
+    // return data type về dạng [1, 2, 3]
+    const types = data.types.length > 0 && data.types.map(type => type.id);
     for (const key in formState.value) {
         if (key == 'is_show' || key == 'is_favorite') {
             formState.value[key] = data[key] == 1 ? true : false;
+        } else if (key == 'type') {
+            formState.value[key] = types;
         } else if (key != 'thumbnail') {
             formState.value[key] = data[key];
         }
@@ -227,17 +279,18 @@ const onFinish = async (values) => {
     const formData = createFormData(values);
 
     try {
-        if (!flagUpdate) {
+        if (!flagUpdate.value) {
             await createEntity(formData);
         } else {
             await updateEntity(formData);
         }
-        message.success(flagUpdate ? 'Update success!' : 'Create success!');
-        showModal.value = false;
+        message.success(flagUpdate.value ? 'Update success!' : 'Create success!');
         getAllPost();
+        handleCloseModal();
+
     } catch (error) {
-        message.error(flagUpdate ? 'Update fail!' : 'Create fail!');
-        console.error(`Error ${flagUpdate ? 'update' : 'create'} entity:`, error);
+        message.error(flagUpdate.value ? 'Update fail!' : 'Create fail!');
+        console.error(`Error ${flagUpdate.value ? 'update' : 'create'} entity:`, error);
     } finally {
         loading.value = false;
     }
@@ -279,13 +332,12 @@ const updateEntity = async (formData) => {
 };
 
 const resetFormValidation = () => {
-    formState.value = { ...defaultFormState };
     const form = formRef.value;
     form.resetFields();
-    formState.value.description = '';
+    formState.value = { ...defaultFormState };
+    formState.value.description = ' ';
     formState.value.imgServer = '';
     flagUpdate.value = false;
-    console.log(formState);
 };
 
 onMounted(() => {

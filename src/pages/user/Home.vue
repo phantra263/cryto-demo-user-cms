@@ -1,56 +1,199 @@
 <template>
     <div class="container">
         <div class="wrap-content">
-            <div class="content-left">
-                <h2>List post</h2>
-                <div class="list-post">
-                    <RouterLink to="/list/1/abc" class="card-post" v-for="(item, index) in 20" :key="index">
-                        <mark>#tag1</mark>
-                        <img src="https://picsum.photos/200/300" alt="">
-                        <div class="description">
-                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Qui unde soluta quasi minima ex
-                                hic
-                                ab placeat maxime, eos non beatae ducimus autem sequi cum, fugit tempora ipsum eveniet
-                                impedit?</p>
-                        </div>
-                    </RouterLink>
-                </div>
-                <button class="btn-load-more">Load more</button>
-            </div>
-
-            <div class="content-right">
-                <div class="wrap-content-right">
-                    <h2>List favorite</h2>
-                    <div class="list-favorite">
-                        <RouterLink to="/" class="card-post" v-for="(item, index) in 5" :key="index">
-                            <mark>#tag1</mark>
-                            <img src="https://picsum.photos/200/300" alt="">
+            <nav class="menu-header">
+                <router-link :to="{ path: `/list/0/all` }">
+                    Tất cả
+                </router-link>
+                <router-link :to="{ path: `/list/${tag.id}/${tag.slug}` }" v-for="(tag, index) in listTags"
+                    :key="tag.id">
+                    {{ tag.name }}
+                </router-link>
+            </nav>
+            <div class="main-content">
+                <div class="content-left">
+                    <h2>List post</h2>
+                    <div class="list-post">
+                        <RouterLink v-if="listPost && listPost.length" :to="{ path: `/detail/${item.id}/${item.slug}` }"
+                            class="card-post" v-for="(item, index) in listPost" :key="index">
+                            <mark>#{{ item.tag_name }}</mark>
+                            <figure>
+                                <img :src="item.thumbnail" alt="">
+                            </figure>
                             <div class="description">
-                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Qui unde soluta quasi minima
-                                    ex
-                                    hic
-                                    ab placeat maxime, eos non beatae ducimus autem sequi cum, fugit tempora ipsum
-                                    eveniet
-                                    impedit?</p>
+                                <h3>{{ item.title }}</h3>
+                                <div v-html="item.description" class="content-desc"></div>
                             </div>
                         </RouterLink>
+                        <a-empty v-else-if="!loading" style="width: 100%;" />
+                        <Loading v-if="loading" />
                     </div>
-                    <div class="banner-advertising">
-                        <img src="https://picsum.photos/200/300" alt="">
-                    </div>
+                    <button class="btn-load-more" @click="loadmore" v-if="listPost.length < total">Load more</button>
                 </div>
 
+                <div class="content-right">
+                    <div class="wrap-content-right">
+                        <h2>List favorite</h2>
+                        <div class="list-favorite">
+                            <RouterLink v-if="listPostFavorite && listPostFavorite.length"
+                                :to="{ path: `/detail/${item.id}/${item.slug}` }" class="card-post"
+                                v-for="(item, index) in listPostFavorite" :key="index">
+                                <mark>#{{ item.tag_name }}</mark>
+                                <figure>
+                                    <img :src="item.thumbnail" alt="">
+                                </figure>
+                                <div class="description">
+                                    <h3>{{ item.title }}</h3>
+                                    <div v-html="item.description" class="content-desc"></div>
+                                </div>
+                            </RouterLink>
+                            <a-empty v-else-if="!loading" />
+                            <Loading v-if="loading" />
+                        </div>
+                        <div class="banner-advertising">
+                            <img src="https://picsum.photos/200/300" alt="">
+                        </div>
+                    </div>
+
+                </div>
             </div>
+
         </div>
     </div>
 </template>
+<script setup>
+import { ref, onMounted, watch } from 'vue';
+import HomeSrv from '../../services/USER/home.service'
+import Loading from '../../components/Loading.vue';
+import { useRoute, useRouter } from 'vue-router';
+
+const listTags = ref([]);
+const listPost = ref([]);
+const listPostFavorite = ref([]);
+const loading = ref(false);
+const total = ref(0);
+const route = useRoute();
+const router = useRouter();
+let fetchParams = {
+    page: 1,
+    per_page: 2,
+}
+
+const getTags = async () => {
+    try {
+        const res = await HomeSrv.getPostType();
+        if (res.data.success) {
+            listTags.value = res.data.data;
+        }
+    } catch (error) {
+        console.error('Error fetching tag:', error);
+    }
+};
+
+const getListPost = async () => {
+    loading.value = true;
+    try {
+        const res = await HomeSrv.getListPost(fetchParams);
+        if (res.data.success) {
+            listPost.value = listPost.value.concat(res.data.data);
+            total.value = res.data.pagination.total;
+        }
+    } catch (error) {
+        console.error('Error fetching tag:', error);
+    } finally {
+        loading.value = false;
+    }
+};
+
+const getListPostFavorite = async () => {
+    loading.value = true;
+    const param = {
+        filter: {
+            is_favorite: 1
+        }
+    }
+    try {
+        const res = await HomeSrv.getListPost(param);
+        if (res.data.success) {
+            listPostFavorite.value = res.data.data;
+        }
+    } catch (error) {
+        console.error('Error fetching tag:', error);
+    } finally {
+        loading.value = false;
+    }
+};
+
+const loadmore = () => {
+    fetchParams = {
+        ...fetchParams,
+        page: fetchParams.page + 1
+    }
+    getListPost();
+}
+
+onMounted(() => {
+    getTags();
+    getListPost();
+    getListPostFavorite();
+});
+
+watch(() => route.params.id,
+    async newId => {
+        listPost.value = [];
+        fetchParams = {
+            ...fetchParams,
+            filter: {
+                ...fetchParams.filter,
+                type_id: newId != 0 ? newId : null,
+            }
+        }
+        await getListPost()
+    }
+)
+
+watch(() => router.currentRoute.value.query, async (newQuery, oldQuery) => {
+    listPost.value = [];
+    fetchParams = {
+        ...fetchParams,
+        filter: {
+            ...fetchParams.filter,
+            title: newQuery.keysearch,
+        }
+    }
+    await getListPost()
+});
+</script>
 <style scoped lang="scss">
 .wrap-content-right {
     position: sticky;
     top: 85px;
 }
 
-.wrap-content {
+.menu-header {
+    padding: 15px;
+    text-align: center;
+    position: sticky;
+    top: 80px;
+    background: rgb(24, 26, 32);
+    z-index: 2;
+    font-size: 14px;
+
+    a {
+        text-transform: uppercase;
+        padding: 10px;
+        color: #EAECEF;
+        font-weight: bold;
+
+
+        &:hover,
+        &.router-link-active {
+            color: #F0B90B;
+        }
+    }
+}
+
+.main-content {
     display: flex;
     gap: 10px;
     padding: 20px 0;
@@ -65,7 +208,6 @@
 
     .list-post {
         display: flex;
-        align-items: baseline;
         flex-wrap: wrap;
     }
 

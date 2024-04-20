@@ -15,11 +15,11 @@ const routes = [
     },
     {
         path: "/",
-        redirect: 'list',
+        redirect: '/list/0/all',
         component: LayoutDefault,
         children: [
-            { path: 'list', component: () => import('./pages/user/Home.vue') },
-            { path: 'list/:id/:slug', component: () => import('./pages/user/DetailPost.vue') }
+            { path: 'list/:id/:slug', component: () => import('./pages/user/Home.vue') },
+            { path: 'detail/:id/:slug', component: () => import('./pages/user/DetailPost.vue') }
         ]
     },
     {

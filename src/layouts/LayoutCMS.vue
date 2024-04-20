@@ -6,17 +6,17 @@
             <a-menu theme="dark" mode="inline">
                 <router-link class="ant-menu-item" exactActiveClass="ant-menu-item-selected" to="/admin"
                     :class="{ 'ant-menu-item-selected': route.name == 'groupDetail' }">
-                    <group-outlined />
+                    <InsertRowAboveOutlined />
                     <span>Post type</span>
                 </router-link>
                 <router-link class="ant-menu-item" exactActiveClass="ant-menu-item-selected" to="/admin/tags"
                     :class="{ 'ant-menu-item-selected': route.name == 'groupDetail' }">
-                    <group-outlined />
+                    <TagsOutlined />
                     <span>Tags</span>
                 </router-link>
                 <router-link class="ant-menu-item" exact exactActiveClass="ant-menu-item-selected"
                     to="/admin/entities-cms">
-                    <user-outlined />
+                    <ScheduleOutlined />
                     <span>Entities</span>
                 </router-link>
             </a-menu>
@@ -49,10 +49,12 @@
 <script setup>
 import {
     UserOutlined,
-    GroupOutlined,
     MenuUnfoldOutlined,
     MenuFoldOutlined,
-    LogoutOutlined
+    LogoutOutlined,
+    InsertRowAboveOutlined,
+    TagsOutlined,
+    ScheduleOutlined
 } from '@ant-design/icons-vue';
 import { ref } from 'vue';
 import Cookie from 'js-cookie';
@@ -62,7 +64,7 @@ const router = useRouter();
 const route = useRoute();
 const collapsed = ref(false);
 const accesstoken = Cookie.get("access_token");
-const currentUser = ref(accesstoken ? JSON.parse(accesstoken) : '');
+const currentUser = ref(accesstoken ? accesstoken : '');
 
 const handleLogout = () => {
     Cookie.remove("access_token");
