@@ -6,7 +6,17 @@
 </template>
 <script setup>
 import { ref } from 'vue';
+import { watch } from 'vue';
+import { useRouter } from 'vue-router';
+
 const open = ref(true);
+const router = useRouter();
+
+watch(() => router.currentRoute.value,
+    (to, from) => {
+        open.value = true;
+    }
+);
 </script>
 <style lang="scss" scoped>
 .model-custom {

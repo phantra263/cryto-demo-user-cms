@@ -22,7 +22,7 @@
                             </figure>
                             <div class="description">
                                 <h3>{{ item.title }}</h3>
-                                <div v-html="item.description" class="content-desc"></div>
+                                <!-- <div v-html="item.description" class="content-desc"></div> -->
                             </div>
                         </RouterLink>
                         <a-empty v-else-if="!loading" style="width: 100%;" />
@@ -44,7 +44,7 @@
                                 </figure>
                                 <div class="description">
                                     <h3>{{ item.title }}</h3>
-                                    <div v-html="item.description" class="content-desc"></div>
+                                    <!-- <div v-html="item.description" class="content-desc"></div> -->
                                 </div>
                             </RouterLink>
                             <a-empty v-else-if="!loading" />
@@ -76,7 +76,7 @@ const route = useRoute();
 const router = useRouter();
 let fetchParams = {
     page: 1,
-    per_page: 2,
+    per_page: 15,
 }
 
 const getTags = async () => {
@@ -152,13 +152,13 @@ watch(() => route.params.id,
     }
 )
 
-watch(() => router.currentRoute.value.query, async (newQuery, oldQuery) => {
+watch(() => router.currentRoute.value.query?.keysearch, async (newQuery, oldQuery) => {
     listPost.value = [];
     fetchParams = {
         ...fetchParams,
         filter: {
             ...fetchParams.filter,
-            title: newQuery.keysearch,
+            title: newQuery,
         }
     }
     await getListPost()

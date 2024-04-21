@@ -33,8 +33,8 @@ import LoginSrv from '../../services/CMS/auth.service';
 const loading = ref(false);
 const router = useRouter();
 const formState = reactive({
-    email: 'admin@gmail.com',
-    password: 'admin!@#456'
+    email: '',
+    password: ''
 });
 const onFinish = async (values) => {
     loading.value = true;
@@ -44,7 +44,9 @@ const onFinish = async (values) => {
             console.log(res.data.data.access_token);
             message.success('Login success!');
             Cookie.set("access_token", `Bearer ${res.data.data.access_token}`);
-            router.push({ name: 'admin' });
+            setTimeout(() => {
+                router.push({ name: 'admin' });
+            }, 200)
         }
     } catch (error) {
         message.error('Sai thông tin đăng nhập');

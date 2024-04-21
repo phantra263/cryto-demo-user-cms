@@ -24,8 +24,17 @@ import { CloseOutlined } from '@ant-design/icons-vue';
 import Footer from '../components/Footer.vue';
 import Header from '../components/Header.vue';
 import ModalAdvUser from '../components/ModalAdvUser.vue';
+import { watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 const showBannerBottom = ref(true);
+const router = useRouter();
+
+watch(() => router.currentRoute.value,
+    (to, from) => {
+        showBannerBottom.value = true;
+    }
+);
 </script>
 
 <style scoped lang="scss">

@@ -9,10 +9,10 @@
         </div>
         <a-empty v-else-if="!loading && isEmptyObject(detailPost)" style="width: 100%;" />
 
-        <div class="wrap-list-similar">
+        <div class="wrap-list-similar" v-if="!loading">
             <h2>Bài viết liên quan</h2>
             <div class="list-similar">
-                <RouterLink v-if="listPost && listPost.length" :to="{ path: `/list/${item.id}/${item.slug}` }"
+                <RouterLink v-if="listPost && listPost.length" :to="{ path: `/detail/${item.id}/${item.slug}` }"
                     class="card-post" v-for=" item  in  listPost " :key="item.id">
                     <mark>#{{ item.tag_name }}</mark>
                     <figure>
@@ -20,36 +20,42 @@
                     </figure>
                     <div class="description">
                         <h3>{{ item.title }}</h3>
-                        <div v-html="item.description" class="content-desc"></div>
+                        <!-- <div v-html="item.description" class="content-desc"></div> -->
                     </div>
                 </RouterLink>
-                <Loading v-else />
+                <Loading v-if="loading" />
             </div>
+            <button class="btn-load-more" @click="loadmore" v-if="listPost.length < total">Load more</button>
         </div>
     </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import HomeSrv from '../../services/USER/home.service';
 import DetailSrv from '../../services/USER/detail.service'
-import Loading from '../../components/Loading.vue';
 import { useRoute } from 'vue-router';
+import Loading from '../../components/Loading.vue';
 
-
+const total = ref(0);
 const listPost = ref([]);
 const detailPost = ref({});
 const loading = ref(false);
 const route = useRoute();
+let fetchParams = {
+    page: 1,
+    per_page: 15,
+}
+
 const isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0;
 }
 
 const getListPost = async () => {
     try {
-        const res = await HomeSrv.getListPost();
+        const res = await HomeSrv.getListPost(fetchParams);
         if (res.data.success) {
-            listPost.value = res.data.data;
-            console.log(listPost);
+            listPost.value = listPost.value.concat(res.data.data);
+            total.value = res.data.pagination.total;
         }
     } catch (error) {
         console.error('Error fetching post:', error);
@@ -70,10 +76,26 @@ const getDetailPost = async () => {
         loading.value = false;
     }
 };
+
+const loadmore = () => {
+    fetchParams = {
+        ...fetchParams,
+        page: fetchParams.page + 1
+    }
+    getListPost();
+}
+
 onMounted(() => {
     getListPost();
     getDetailPost();
 });
+
+watch(() => route.params.id,
+    async newId => {
+        detailPost.value = {};
+        await getDetailPost()
+    }
+)
 </script>
 <style scoped lang="scss">
 .wrap-detail {
@@ -85,14 +107,6 @@ onMounted(() => {
 
     h1 {
         font-size: 20px;
-    }
-
-    .media {
-        iframe {
-            width: 100%;
-            height: 400px;
-            margin: 20px auto;
-        }
     }
 }
 

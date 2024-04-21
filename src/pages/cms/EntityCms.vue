@@ -109,7 +109,7 @@ const defaultFormState = {
 
 let fetchParams = {
     page: 1,
-    per_page: 5
+    per_page: 15
 }
 let formState = ref({ ...defaultFormState });
 const formRef = ref(null);
